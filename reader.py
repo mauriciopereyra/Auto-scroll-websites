@@ -1,7 +1,9 @@
 import time
+from typing import final
 from selenium import webdriver
 from sys import platform
 import pyautogui
+from pynput import keyboard
 
 
 if 'linux' in platform:
@@ -12,23 +14,53 @@ else:
 
 driver.get('https://mauriciopereyra.com')
 
+elements_to_remove = []
+scroll_speed = 1
 
+def on_press(key):
+    global scroll_speed
+    try:
+        k = key.char 
+    except:
+        k = key.name
+    if k == 'd':  
+        remove_element()
+    elif k == '+':
+        scroll_speed += 1
+    elif k == '-':
+        scroll_speed -= 1
+    elif k == '0':
+        scroll_speed = 0
+        keep = 'r'
 
-
-
-for a in range(20):
+def final_position():
     offset = {'x':-24,'y':-150}
     screen_position = pyautogui.position()
     browser_position = driver.get_window_position()
-
-    final_position = {
+    return {
         'x':screen_position.x-browser_position['x']+offset['x'],
         'y':screen_position.y-browser_position['y']+offset['y']
         }
+            
 
-    element = driver.execute_script('return document.elementFromPoint({}, {});'.format(final_position['x'],final_position['y']))
-    if element:
-        print(element.get_attribute("class"))
-        print(final_position)
+def remove_element():
+    position = final_position()
+    element = driver.execute_script('return document.elementFromPoint({}, {});'.format(position['x'],position['y']))
+    elements_to_remove.append(element)
+
+    if element: # If valid element found
         driver.execute_script("arguments[0].style.display = 'none';", element)
-    time.sleep(3)
+
+
+listener = keyboard.Listener(on_press=on_press)
+listener.start()  # start to listen on a separate thread
+
+
+y = 0
+while True:
+    driver.execute_script("window.scrollTo({},{})".format(0,y)) 
+    print(scroll_speed)
+    print(y)
+    y+=scroll_speed
+    # y+=1
+    time.sleep(0.1)
